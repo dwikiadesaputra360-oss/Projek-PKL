@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ganti Foto KTP - Disdukcapil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="bi bi-shield-check text-primary fs-3"></i>
+            <span>Disdukcapil</span>
+        </div>
+        <a href="index.html"><i class="bi bi-speedometer2"></i>Dashboard</a>
+        <a href="perekaman.html"><i class="bi bi-person-badge"></i>Perekaman KTP</a>
+        <a href="pengaduan.html"><i class="bi bi-journal-text"></i>Pengaduan Harian</a>
+        <a href="ganti-foto.html" class="active"><i class="bi bi-camera"></i>Ganti Foto KTP</a>
+    </nav>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light d-md-none" id="sidebarToggle">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <h2 class="page-title mb-0">Data Ganti Foto KTP</h2>
+            </div>
+            <div class="d-flex align-items-center mt-3 mt-md-0">
+                <span class="text-muted me-3" id="currentDate"></span>
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-person"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div id="alertBox" class="alert d-none" role="alert"></div>
+
+        <div class="glass-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 border-bottom pb-2">Form Input Ganti Foto</h5>
+            <form id="dataForm">
+                <input type="hidden" id="editId">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Nama</label>
+                        <input type="text" class="form-control" id="nama" placeholder="Masukkan nama" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted fw-bold small text-uppercase">Kecamatan</label>
+                        <input type="text" class="form-control" id="kecamatan" placeholder="Masukkan kecamatan" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted fw-bold small text-uppercase">No HP</label>
+                        <input type="text" class="form-control" id="no_hp" placeholder="Masukkan No HP" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label d-block text-muted fw-bold small text-uppercase">Persyaratan</label>
+                        <div class="d-flex gap-4 mt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fc_kk">
+                                <label class="form-check-label">FC KK</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ktp">
+                                <label class="form-check-label">KTP</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="form_check">
+                                <label class="form-check-label">Form</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex mt-2">
+                    <button type="submit" class="btn btn-primary" id="saveBtn"><i class="bi bi-save me-1"></i> Simpan Data</button>
+                    <button type="button" class="btn btn-light border ms-2 d-none" id="cancelBtn" onclick="resetForm()">Batal</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0">Daftar Ganti Foto</h5>
+                <div class="d-flex gap-2">
+                    <div class="input-group" style="width: 250px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="searchInput" placeholder="Cari nama..." onkeyup="filterTable()">
+                    </div>
+                    <button class="btn btn-outline-danger" onclick="exportPDF()"><i class="bi bi-file-pdf"></i> PDF</button>
+                    <button class="btn btn-outline-success" onclick="exportExcel()"><i class="bi bi-file-excel"></i> Excel</button>
+                </div>
+            </div>
+
+            <div class="table-responsive table-container p-0 border-0 shadow-none">
+                <table class="table" id="dataTable" style="font-size: 0.9rem;">
+                    <thead>
+                        <tr>
+                            <th width="5%">No</th>
+                            <th>Nama</th>
+                            <th>Kecamatan</th>
+                            <th>No HP</th>
+                            <th class="text-center">FC KK</th>
+                            <th class="text-center">KTP</th>
+                            <th class="text-center">Form</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+<script>
+    if (!localStorage.getItem('auth')) window.location.href = 'login.html';
+
+    const API_URL = 'http://localhost:5000/api/ganti-foto';
+    let records = [];
+
+    // Set current date
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', options);
+
+    async function loadData() {
+        try {
+            const res = await fetch(API_URL);
+            records = await res.json();
+            renderTable(records);
+        } catch (err) {
+            showAlert('Gagal memuat data', 'danger');
+        }
+    }
+
+    function getCheckIcon(val) {
+        return val ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>';
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        data.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${row.nama}</td>
+                <td>${row.kecamatan}</td>
+                <td>${row.no_hp}</td>
+                <td class="text-center">${getCheckIcon(row.fc_kk)}</td>
+                <td class="text-center">${getCheckIcon(row.ktp)}</td>
+                <td class="text-center">${getCheckIcon(row.form)}</td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center gap-1">
+                        <button class="btn btn-sm btn-outline-warning" onclick='editData(${JSON.stringify(row)})'><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteData(${row.id})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    document.getElementById('dataForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const payload = {
+            nama: document.getElementById('nama').value,
+            kecamatan: document.getElementById('kecamatan').value,
+            no_hp: document.getElementById('no_hp').value,
+            fc_kk: document.getElementById('fc_kk').checked,
+            ktp: document.getElementById('ktp').checked,
+            form: document.getElementById('form_check').checked
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_URL}/${id}` : API_URL;
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (result.success) {
+                showAlert(result.message, 'success');
+                resetForm();
+                loadData();
+            }
+        } catch (err) {
+            showAlert('Terjadi kesalahan', 'danger');
+        }
+    });
+
+    function editData(row) {
+        document.getElementById('editId').value = row.id;
+        document.getElementById('nama').value = row.nama;
+        document.getElementById('kecamatan').value = row.kecamatan;
+        document.getElementById('no_hp').value = row.no_hp;
+        document.getElementById('fc_kk').checked = row.fc_kk;
+        document.getElementById('ktp').checked = row.ktp;
+        document.getElementById('form_check').checked = row.form;
+        
+        document.getElementById('saveBtn').textContent = 'Update Data';
+        document.getElementById('saveBtn').classList.replace('btn-primary', 'btn-warning');
+        document.getElementById('cancelBtn').classList.remove('d-none');
+    }
+
+    async function deleteData(id) {
+        if (!confirm('Yakin ingin menghapus data ini?')) return;
+        try {
+            const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            const result = await res.json();
+            if (result.success) {
+                showAlert(result.message, 'success');
+                loadData();
+            }
+        } catch (err) {
+            showAlert('Gagal menghapus data', 'danger');
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('dataForm').reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('saveBtn').textContent = 'Simpan Data';
+        document.getElementById('saveBtn').classList.replace('btn-warning', 'btn-primary');
+        document.getElementById('cancelBtn').classList.add('d-none');
+    }
+
+    function showAlert(message, type) {
+        const box = document.getElementById('alertBox');
+        box.textContent = message;
+        box.className = `alert alert-${type} alert-dismissible fade show`;
+        setTimeout(() => box.classList.add('d-none'), 3000);
+    }
+
+    function filterTable() {
+        const keyword = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = records.filter(row => row.nama.toLowerCase().includes(keyword));
+        renderTable(filtered);
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Data Ganti Foto KTP", 14, 15);
+        doc.autoTable({
+            startY: 20,
+            head: [['No', 'Nama', 'Kecamatan', 'No HP', 'FC KK', 'KTP', 'Form']],
+            body: records.map((r, i) => [
+                i + 1, r.nama, r.kecamatan, r.no_hp, 
+                r.fc_kk ? '4' : '8', r.ktp ? '4' : '8', r.form ? '4' : '8'
+            ]),
+            styles: { halign: 'center' },
+            columnStyles: {
+                0: { halign: 'center' },
+                1: { halign: 'left' },
+                2: { halign: 'left' },
+                3: { halign: 'left' },
+                4: { font: 'zapfdingbats', fontSize: 12 },
+                5: { font: 'zapfdingbats', fontSize: 12 },
+                6: { font: 'zapfdingbats', fontSize: 12 }
+            },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index >= 4 && data.column.index <= 6) {
+                    if (data.cell.raw === '4') {
+                        data.cell.styles.textColor = [25, 135, 84]; // text-success
+                    } else if (data.cell.raw === '8') {
+                        data.cell.styles.textColor = [220, 53, 69]; // text-danger
+                    }
+                }
+            }
+        });
+        doc.save("Ganti_Foto_KTP.pdf");
+    }
+
+    function exportExcel() {
+        const wsData = records.map((r, i) => ({
+            No: i + 1, Nama: r.nama, Kecamatan: r.kecamatan, "No HP": r.no_hp,
+            "FC KK": r.fc_kk ? '✓' : 'X', KTP: r.ktp ? '✓' : 'X', Form: r.form ? '✓' : 'X'
+        }));
+        const ws = XLSX.utils.json_to_sheet(wsData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Ganti Foto");
+        XLSX.writeFile(wb, "Ganti_Foto_KTP.xlsx");
+    }
+
+    loadData();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            sidebarOverlay.classList.toggle('show');
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
+        });
+    }
+</script>
+</body>
+</html>
